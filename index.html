@@ -17,13 +17,17 @@
                 <button class="nav-btn" data-tab="weapon">Weapon 武器</button>
                 <button class="nav-btn" data-tab="economy">Economy 经济</button>
                 <button class="nav-btn" data-tab="grenade">Grenade 投掷物</button>
+                <button class="nav-btn formula-toggle" id="formulaToggleBtn">📐 公式参考</button>
             </nav>
         </header>
 
-        <main class="main">
-            <!-- ==================== 基础概念 ==================== -->
-            <div class="card" style="margin-bottom:2rem;border-left:4px solid #f0b429;">
-                <h3 class="card-title">📐 单位系统与核心公式说明</h3>
+        <!-- ==================== 悬浮窗：单位系统与核心公式 ==================== -->
+        <div class="formula-float" id="formulaFloat">
+            <div class="formula-float-header" id="formulaFloatHeader">
+                <span class="formula-float-title">📐 单位系统与核心公式说明</span>
+                <button class="formula-float-close" id="formulaCloseBtn">✕</button>
+            </div>
+            <div class="formula-float-body">
                 <p class="card-desc">CS:GO 使用 Source 引擎单位体系，理解这些基础概念是读懂所有数值的前提。</p>
                 <table class="data-table">
                     <thead><tr><th>概念</th><th>定义</th><th>换算/说明</th></tr></thead>
@@ -130,7 +134,9 @@
                     </tbody>
                 </table>
             </div>
+        </div>
 
+        <main class="main">
             <!-- ==================== Character 角色 ==================== -->
             <section class="tab-panel active" id="tab-character">
                 <h2 class="section-title">Character 角色数值</h2>
@@ -249,8 +255,8 @@
                         <tbody>
                             <tr><td>跳跃高度</td><td class="val">~55.5 u</td><td>≈ 1.06m。sv_jump_impulse = 301.993377（初始垂直速度 u/s）</td></tr>
                             <tr><td>蹲跳高度</td><td class="val">~64 u</td><td>≈ 1.22m。跳跃+空中蹲下，可上更高台面</td></tr>
-                            <tr><td>站立碰撞体</td><td class="val">72u高 × 32u宽</td><td>高≈1.37m，宽≈0.61m。眼位高度 64u≈1.22m</td></tr>
-                            <tr><td>蹲下碰撞体</td><td class="val">54u高</td><td>≈1.03m。眼位 46u≈0.88m</td></tr>
+                            <tr><td>站立碰撞体 <span class="tip" data-tip="Bounding Box / Hull：引擎为角色生成的隐形包围盒，用于物理碰撞检测和子弹命中判定。站立时为 32×32×72u 的长方体。">ⓘ</span></td><td class="val">72u高 × 32u宽</td><td>高≈1.37m，宽≈0.61m。眼位高度 64u≈1.22m</td></tr>
+                            <tr><td>蹲下碰撞体 <span class="tip" data-tip="蹲下后碰撞盒高度从72u缩至54u（矮18u≈34cm），宽度不变。头部位置更低更难被爆头，且可通过54u高的矮通道/窗口。">ⓘ</span></td><td class="val">54u高</td><td>≈1.03m。眼位 46u≈0.88m</td></tr>
                             <tr><td>重力</td><td class="val">sv_gravity = 800 u/s²</td><td>≈ 15.24 m/s²（约1.55倍地球重力）</td></tr>
                             <tr><td>空气加速</td><td class="val">sv_airaccelerate = 12</td><td>空中加速率，Strafe Jump/Bunny Hop 基础</td></tr>
                             <tr><td>地面加速</td><td class="val">sv_accelerate = 5.5</td><td>地面加速率</td></tr>
