@@ -9,26 +9,35 @@
 <body>
     <div class="app">
         <header class="header">
-            <h1 class="logo">CS:GO <span>3C 数值拆解</span></h1>
-            <nav class="nav">
-                <button class="nav-btn active" data-tab="character">Character 角色</button>
-                <button class="nav-btn" data-tab="control">Control 操控</button>
-                <button class="nav-btn" data-tab="camera">Camera 镜头</button>
-                <button class="nav-btn" data-tab="weapon">Weapon 武器</button>
-                <button class="nav-btn" data-tab="economy">Economy 经济</button>
-                <button class="nav-btn" data-tab="grenade">Grenade 投掷物</button>
-                <button class="nav-btn formula-toggle" id="formulaToggleBtn">📐 公式参考</button>
-                <button class="nav-btn data-notes-toggle" id="dataNotesToggleBtn">📋 数据整理说明</button>
-            </nav>
+            <div class="header-inner">
+                <h1 class="logo">CS:GO <span>3C 数值拆解</span></h1>
+                <nav class="nav">
+                    <button class="nav-btn active" data-tab="character">Character 角色</button>
+                    <button class="nav-btn" data-tab="control">Control 操控</button>
+                    <button class="nav-btn" data-tab="camera">Camera 镜头</button>
+                    <button class="nav-btn" data-tab="weapon">Weapon 武器</button>
+                    <button class="nav-btn" data-tab="economy">Economy 经济</button>
+                    <button class="nav-btn" data-tab="grenade">Grenade 投掷物</button>
+                </nav>
+            </div>
         </header>
 
-        <!-- ==================== 悬浮窗：单位系统与核心公式 ==================== -->
-        <div class="formula-float" id="formulaFloat">
-            <div class="formula-float-header" id="formulaFloatHeader">
-                <span class="formula-float-title">📐 单位系统与核心公式说明</span>
-                <button class="formula-float-close" id="formulaCloseBtn">✕</button>
+        <!-- ==================== 右侧面板触发器 ==================== -->
+        <div class="side-panel-triggers">
+            <button class="side-panel-tab" id="formulaPanelTab">📐 公式参考</button>
+            <button class="side-panel-tab" id="dataNotesPanelTab">📋 数据说明</button>
+        </div>
+
+        <!-- ==================== 右侧面板遮罩 ==================== -->
+        <div class="side-panel-overlay" id="sidePanelOverlay"></div>
+
+        <!-- ==================== 右侧面板：单位系统与核心公式 ==================== -->
+        <div class="side-panel" id="formulaPanel">
+            <div class="side-panel-header">
+                <span class="side-panel-title">📐 单位系统与核心公式说明</span>
+                <button class="side-panel-close" id="formulaPanelClose">✕</button>
             </div>
-            <div class="formula-float-body">
+            <div class="side-panel-body">
                 <p class="card-desc">CS:GO 使用 Source 引擎单位体系，理解这些基础概念是读懂所有数值的前提。</p>
                 <table class="data-table">
                     <thead><tr><th>概念</th><th>定义</th><th>换算/说明</th></tr></thead>
@@ -137,13 +146,13 @@
             </div>
         </div>
 
-        <!-- ==================== 悬浮窗：数据整理说明 ==================== -->
-        <div class="formula-float" id="dataNotesFloat">
-            <div class="formula-float-header" id="dataNotesFloatHeader">
-                <span class="formula-float-title">📋 数据整理说明</span>
-                <button class="formula-float-close" id="dataNotesCloseBtn">✕</button>
+        <!-- ==================== 右侧面板：数据整理说明 ==================== -->
+        <div class="side-panel" id="dataNotesPanel">
+            <div class="side-panel-header">
+                <span class="side-panel-title">📋 数据整理说明</span>
+                <button class="side-panel-close" id="dataNotesPanelClose">✕</button>
             </div>
-            <div class="formula-float-body">
+            <div class="side-panel-body">
                 <p style="margin:0 0 0.8rem;color:#e0e0e0;"><strong>一、数据来源</strong></p>
                 <ul style="margin:0 0 1rem 1.2rem;padding:0;">
                     <li><strong>VPK 原始数据</strong>：所有武器数值均来自 CS2 pak01_dir.vpk 中提取的两个核心文件：
@@ -200,6 +209,9 @@
                 </ul>
             </div>
         </div>
+
+        <!-- ==================== 左侧标题导航 ==================== -->
+        <nav class="side-toc" id="sideToc"></nav>
 
         <main class="main">
             <!-- ==================== Character 角色 ==================== -->

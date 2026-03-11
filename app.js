@@ -16,104 +16,60 @@ document.addEventListener('DOMContentLoaded', function () {
             panels.forEach(function (p) { p.classList.remove('active'); });
             var targetPanel = document.getElementById('tab-' + target);
             if (targetPanel) targetPanel.classList.add('active');
+            // 切换 tab 后重新构建目录
+            buildSideToc();
         });
     });
 
-    // 公式悬浮窗
-    var floatEl = document.getElementById('formulaFloat');
-    var toggleBtn = document.getElementById('formulaToggleBtn');
-    var closeBtn = document.getElementById('formulaCloseBtn');
-    var header = document.getElementById('formulaFloatHeader');
+    // ========== 右侧面板逻辑 ==========
+    var overlay = document.getElementById('sidePanelOverlay');
+    var formulaPanel = document.getElementById('formulaPanel');
+    var dataNotesPanel = document.getElementById('dataNotesPanel');
+    var formulaTab = document.getElementById('formulaPanelTab');
+    var dataNotesTab = document.getElementById('dataNotesPanelTab');
+    var formulaClose = document.getElementById('formulaPanelClose');
+    var dataNotesClose = document.getElementById('dataNotesPanelClose');
 
-    // 数据整理说明悬浮窗
-    var notesFloatEl = document.getElementById('dataNotesFloat');
-    var notesToggleBtn = document.getElementById('dataNotesToggleBtn');
-    var notesCloseBtn = document.getElementById('dataNotesCloseBtn');
-    var notesHeader = document.getElementById('dataNotesFloatHeader');
-
-    function showFloat() {
-        floatEl.classList.add('visible');
-        toggleBtn.classList.add('float-active');
-    }
-    function hideFloat() {
-        floatEl.classList.remove('visible');
-        toggleBtn.classList.remove('float-active');
-    }
-    function showNotesFloat() {
-        notesFloatEl.classList.add('visible');
-        notesToggleBtn.classList.add('float-active');
-    }
-    function hideNotesFloat() {
-        notesFloatEl.classList.remove('visible');
-        notesToggleBtn.classList.remove('float-active');
+    function openPanel(panel, tab) {
+        // 关闭所有面板
+        [formulaPanel, dataNotesPanel].forEach(function (p) { p.classList.remove('visible'); });
+        [formulaTab, dataNotesTab].forEach(function (t) { t.classList.remove('active'); });
+        // 打开目标面板
+        panel.classList.add('visible');
+        tab.classList.add('active');
+        overlay.classList.add('visible');
     }
 
-    toggleBtn.addEventListener('click', function () {
-        if (floatEl.classList.contains('visible')) {
-            hideFloat();
+    function closeAllPanels() {
+        [formulaPanel, dataNotesPanel].forEach(function (p) { p.classList.remove('visible'); });
+        [formulaTab, dataNotesTab].forEach(function (t) { t.classList.remove('active'); });
+        overlay.classList.remove('visible');
+    }
+
+    formulaTab.addEventListener('click', function () {
+        if (formulaPanel.classList.contains('visible')) {
+            closeAllPanels();
         } else {
-            showFloat();
+            openPanel(formulaPanel, formulaTab);
         }
     });
 
-    closeBtn.addEventListener('click', function () {
-        hideFloat();
-    });
-
-    notesToggleBtn.addEventListener('click', function () {
-        if (notesFloatEl.classList.contains('visible')) {
-            hideNotesFloat();
+    dataNotesTab.addEventListener('click', function () {
+        if (dataNotesPanel.classList.contains('visible')) {
+            closeAllPanels();
         } else {
-            showNotesFloat();
+            openPanel(dataNotesPanel, dataNotesTab);
         }
     });
 
-    notesCloseBtn.addEventListener('click', function () {
-        hideNotesFloat();
-    });
-
-    // 通用拖拽逻辑
-    function makeDraggable(headerEl, floatEl, closeBtnEl) {
-        var isDrag = false;
-        var offX = 0, offY = 0;
-
-        headerEl.addEventListener('mousedown', function (e) {
-            if (e.target === closeBtnEl || closeBtnEl.contains(e.target)) return;
-            isDrag = true;
-            var rect = floatEl.getBoundingClientRect();
-            offX = e.clientX - rect.left;
-            offY = e.clientY - rect.top;
-            floatEl.style.transition = 'none';
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', function (e) {
-            if (!isDrag) return;
-            var x = e.clientX - offX;
-            var y = e.clientY - offY;
-            x = Math.max(0, Math.min(x, window.innerWidth - floatEl.offsetWidth));
-            y = Math.max(0, Math.min(y, window.innerHeight - 40));
-            floatEl.style.left = x + 'px';
-            floatEl.style.top = y + 'px';
-            floatEl.style.right = 'auto';
-        });
-
-        document.addEventListener('mouseup', function () {
-            if (isDrag) {
-                isDrag = false;
-                floatEl.style.transition = '';
-            }
-        });
-    }
-
-    makeDraggable(header, floatEl, closeBtn);
-    makeDraggable(notesHeader, notesFloatEl, notesCloseBtn);
+    formulaClose.addEventListener('click', closeAllPanels);
+    dataNotesClose.addEventListener('click', closeAllPanels);
+    overlay.addEventListener('click', closeAllPanels);
 
     // ESC 关闭
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
-            if (floatEl.classList.contains('visible')) hideFloat();
-            if (notesFloatEl.classList.contains('visible')) hideNotesFloat();
+            closeAllPanels();
         }
     });
 
@@ -133,6 +89,12 @@ document.addEventListener('DOMContentLoaded', function () {
             renderTab(data, cfg.containerId);
         }
     });
+
+    // 初始构建左侧目录（默认激活第一个 tab）
+    buildSideToc();
+
+    // 滚动时高亮当前可见卡片对应的目录项
+    window.addEventListener('scroll', updateTocActive);
 });
 
 /**
@@ -151,7 +113,7 @@ function renderTab(data, containerId) {
         if (key === 'sections') return;
         var section = data[key];
         if (!section || !section.columns) return;
-        html += buildCard(section);
+        html += buildCard(section, key);
     });
 
     container.innerHTML = html;
@@ -174,13 +136,14 @@ function colGroupOffset(groups, targetGroup, n) {
  * @param {Object} section - 单个武器分类的数据
  * @returns {string} HTML 字符串
  */
-function buildCard(section) {
+function buildCard(section, sectionKey) {
     // Pipeline 布局：步骤流程卡片式展示
     if (section.layout === 'pipeline') {
-        return buildPipelineCard(section);
+        return buildPipelineCard(section, sectionKey);
     }
 
-    var html = '<div class="card">';
+    var cardId = sectionKey ? ' id="card-' + sectionKey + '"' : '';
+    var html = '<div class="card"' + cardId + '>';
     html += '<h3 class="card-title">' + section.title + '</h3>';
 
     if (section.desc) {
@@ -290,6 +253,9 @@ function buildCard(section) {
                 if (row.game && row.game[key]) {
                     vpkTag += ' <span class="game-verified">游戏核实</span>';
                 }
+                if (row.console && row.console[key]) {
+                    vpkTag += ' <span class="console-verified">控制台核实</span>';
+                }
                 // 最后一列（说明列）不加 val class，允许自由换行；且不转义HTML以支持 tooltip
                 var isLastCol = (i === section.keys.length - 1 && section.keys.length > 2);
                 var cls = isLastCol ? '' : 'val';
@@ -314,8 +280,9 @@ function buildCard(section) {
 /**
  * Pipeline 布局：横向步骤流水线 + 下方演算面板
  */
-function buildPipelineCard(section) {
-    var html = '<div class="card">';
+function buildPipelineCard(section, sectionKey) {
+    var cardId = sectionKey ? ' id="card-' + sectionKey + '"' : '';
+    var html = '<div class="card"' + cardId + '>';
     html += '<h3 class="card-title">' + section.title + '</h3>';
 
     if (section.desc) {
@@ -336,7 +303,7 @@ function buildPipelineCard(section) {
         html += '</div>';
 
         if (!isLast) {
-            html += '<div class="pl-arrow">→</div>';
+            html += '<div class="pl-arrow"><span class="pl-arrow-line"></span><span class="pl-arrow-head"></span></div>';
         }
     });
     html += '</div>';
@@ -350,6 +317,9 @@ function buildPipelineCard(section) {
         }
         if (row.game && row.game.example) {
             vpkTag += ' <span class="game-verified">游戏核实</span>';
+        }
+        if (row.console && row.console.example) {
+            vpkTag += ' <span class="console-verified">控制台核实</span>';
         }
         var stepName = (row.step || '').replace(/^\d+\.\s*/, '');
         html += '<div class="pl-detail-panel' + (idx === 0 ? ' active' : '') + '" data-pl-panel="' + idx + '">';
@@ -441,6 +411,70 @@ function escapeHtml(str) {
         tip.style.left = left + 'px';
     }
 })();
+
+/* ========== 左侧标题目录导航 ========== */
+function buildSideToc() {
+    var toc = document.getElementById('sideToc');
+    if (!toc) return;
+
+    // 找到当前激活的 tab-panel
+    var activePanel = document.querySelector('.tab-panel.active');
+    if (!activePanel) { toc.innerHTML = ''; return; }
+
+    // 收集该 panel 下所有带 id 的 card
+    var cards = activePanel.querySelectorAll('.card[id]');
+    var html = '';
+    cards.forEach(function (card) {
+        var titleEl = card.querySelector('.card-title');
+        if (!titleEl) return;
+        var title = titleEl.textContent;
+        var id = card.id;
+        html += '<a class="side-toc-item" data-toc-target="' + id + '">' + escapeHtml(title) + '</a>';
+    });
+    toc.innerHTML = html;
+
+    // 绑定点击跳转
+    toc.querySelectorAll('.side-toc-item').forEach(function (item) {
+        item.addEventListener('click', function () {
+            var targetId = item.getAttribute('data-toc-target');
+            var targetEl = document.getElementById(targetId);
+            if (!targetEl) return;
+            var headerH = document.querySelector('.header') ? document.querySelector('.header').offsetHeight : 0;
+            var top = targetEl.getBoundingClientRect().top + window.scrollY - headerH - 16;
+            window.scrollTo({ top: top, behavior: 'smooth' });
+        });
+    });
+
+    // 立即更新高亮
+    updateTocActive();
+}
+
+function updateTocActive() {
+    var toc = document.getElementById('sideToc');
+    if (!toc) return;
+    var items = toc.querySelectorAll('.side-toc-item');
+    if (!items.length) return;
+
+    var headerH = document.querySelector('.header') ? document.querySelector('.header').offsetHeight : 0;
+    var scrollTop = window.scrollY + headerH + 40;
+    var activeItem = null;
+
+    items.forEach(function (item) {
+        var targetId = item.getAttribute('data-toc-target');
+        var targetEl = document.getElementById(targetId);
+        if (!targetEl) return;
+        if (targetEl.offsetTop <= scrollTop) {
+            activeItem = item;
+        }
+    });
+
+    items.forEach(function (item) { item.classList.remove('active'); });
+    if (activeItem) {
+        activeItem.classList.add('active');
+    } else if (items.length) {
+        items[0].classList.add('active');
+    }
+}
 
 /* ========== 置顶按钮 ========== */
 (function () {
